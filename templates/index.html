@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Portada - Sistema de Adopción{% endblock %}
+
+{% block content %}
+<div class="section">
+    <h2>Bienvenido al Sistema de Adopción de Mascotas</h2>
+    <p>Conectamos mascotas que necesitan hogar con familias amorosas. Aquí puedes publicar avisos de adopción, ver mascotas disponibles y consultar estadísticas del sistema.</p>
+    
+    <h3>Últimos 5 avisos de adopción</h3>
+    {% if avisos %}
+    <table>
+        <thead>
+            <tr>
+                <th>Fecha Publicación</th>
+                <th>Comuna</th>
+                <th>Sector</th>
+                <th>Cantidad</th>
+                <th>Tipo</th>
+                <th>Edad</th>
+                <th>Contacto</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for aviso in avisos %}
+            <tr>
+                <td>{{ aviso.fecha_ingreso.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>{{ aviso.comuna.nombre }}</td>
+                <td>{{ aviso.sector if aviso.sector else '-' }}</td>
+                <td>{{ aviso.cantidad }}</td>
+                <td>{{ aviso.tipo|capitalize }}</td>
+                <td>{{ aviso.edad }} {{ 'años' if aviso.unidad_medida == 'a' else 'meses' }}</td>
+                <td>{{ aviso.nombre }}</td>
+                <td>
+                    <a href="{{ url_for('detalle_aviso', aviso_id=aviso.id) }}" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">Ver detalle</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div style="margin-top: 1rem;">
+        <a href="{{ url_for('listado_adopciones') }}" class="btn">Ver todos los avisos</a>
+        <a href="{{ url_for('agregar_aviso') }}" class="btn btn-secondary">Publicar nuevo aviso</a>
+    </div>
+    {% else %}
+    <p>No hay avisos de adopción registrados aún. ¡Sé el primero en publicar!</p>
+    <a href="{{ url_for('agregar_aviso') }}" class="btn">Publicar primer aviso</a>
+    {% endif %}
+</div>
+{% endblock %}
