@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle de Aviso - Sistema de Adopción{% endblock %}
+
+{% block content %}
+<div class="section">
+    <h2>Detalle de Aviso de Adopción</h2>
+    
+    <div class="form-section">
+        <h3>Información del lugar</h3>
+        <p><strong>Fecha de publicación:</strong> {{ aviso.fecha_ingreso.strftime('%Y-%m-%d %H:%M') }}</p>
+        <p><strong>Fecha de entrega:</strong> {{ aviso.fecha_entrega.strftime('%Y-%m-%d %H:%M') }}</p>
+        <p><strong>Región:</strong> {{ aviso.comuna.region.nombre }}</p>
+        <p><strong>Comuna:</strong> {{ aviso.comuna.nombre }}</p>
+        <p><strong>Sector:</strong> {{ aviso.sector if aviso.sector else 'No especificado' }}</p>
+    </div>
+    
+    <div class="form-section">
+        <h3>Información de contacto</h3>
+        <p><strong>Nombre:</strong> {{ aviso.nombre }}</p>
+        <p><strong>Email:</strong> <a href="mailto:{{ aviso.email }}">{{ aviso.email }}</a></p>
+        {% if aviso.celular %}
+        <p><strong>Celular:</strong> <a href="tel:{{ aviso.celular }}">{{ aviso.celular }}</a></p>
+        {% endif %}
+        {% if aviso.contactos %}
+        <p><strong>Contacto adicional:</strong></p>
+        <ul>
+            {% for contacto in aviso.contactos %}
+            <li>{{ contacto.nombre|capitalize }}: {{ contacto.identificador }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+    
+    <div class="form-section">
+        <h3>Información de la mascota</h3>
+        <p><strong>Tipo:</strong> {{ aviso.tipo|capitalize }}</p>
+        <p><strong>Cantidad:</strong> {{ aviso.cantidad }}</p>
+        <p><strong>Edad:</strong> {{ aviso.edad }} {{ 'años' if aviso.unidad_medida == 'a' else 'meses' }}</p>
+        {% if aviso.descripcion %}
+        <p><strong>Descripción:</strong></p>
+        <div class="alert">
+            {{ aviso.descripcion }}
+        </div>
+        {% endif %}
+    </div>
+
+    {% if aviso.fotos %}
+    <div class="form-section">
+        <h3>Fotografías</h3>
+        <div class="photo-container">
+            {% for foto in aviso.fotos %}
+            <div>
+                <img src="{{ url_for('static', filename='uploads/' + foto.nombre_archivo) }}" 
+                     alt="Foto de {{ aviso.tipo }}"
+                     class="photo-preview"
+                     onclick='enlargePhoto("{{ url_for("static", filename="uploads/" + foto.nombre_archivo) }}")'>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="pagination">
+        <a href="{{ url_for('listado_adopciones') }}" class="btn btn-secondary">Volver al listado</a>
+        <a href="{{ url_for('index') }}" class="btn">Volver a portada</a>
+    </div>
+</div>
+
+<!-- Modal de foto ampliada -->
+<div id="photoModal" class="modal">
+    <div class="modal-content">
+        <img id="enlargedPhoto" src="" alt="Foto ampliada" class="photo-full">
+        <br><br>
+        <button onclick="closePhotoModal()" class="btn">Cerrar</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function enlargePhoto(photoUrl) {
+        document.getElementById('enlargedPhoto').src = photoUrl;
+        document.getElementById('photoModal').style.display = 'block';
+    }
+
+    function closePhotoModal() {
+        document.getElementById('photoModal').style.display = 'none';
+    }
+
+    // Cerrar modal al hacer clic fuera de la imagen
+    window.onclick = function(event) {
+        const modal = document.getElementById('photoModal');
+        if (event.target === modal) {
+            closePhotoModal();
+        }
+    }
+
+    // Cerrar modal con tecla Escape
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closePhotoModal();
+        }
+    });
+</script>
+{% endblock %}
