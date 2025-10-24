@@ -3,74 +3,109 @@
 {% block title %}Detalle de Aviso - Sistema de Adopción{% endblock %}
 
 {% block content %}
-<div class="section">
+<div class="section active">
     <h2>Detalle de Aviso de Adopción</h2>
     
-    <div class="form-section">
-        <h3>Información del lugar</h3>
-        <p><strong>Fecha de publicación:</strong> {{ aviso.fecha_ingreso.strftime('%Y-%m-%d %H:%M') }}</p>
-        <p><strong>Fecha de entrega:</strong> {{ aviso.fecha_entrega.strftime('%Y-%m-%d %H:%M') }}</p>
-        <p><strong>Región:</strong> {{ aviso.comuna.region.nombre }}</p>
-        <p><strong>Comuna:</strong> {{ aviso.comuna.nombre }}</p>
-        <p><strong>Sector:</strong> {{ aviso.sector if aviso.sector else 'No especificado' }}</p>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+        <div>
+            <h4 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 0.5rem;">Información del lugar</h4>
+            <p><strong>Fecha de publicación:</strong> {{ aviso.fecha_ingreso.strftime('%Y-%m-%d %H:%M') }}</p>
+            <p><strong>Fecha de entrega:</strong> {{ aviso.fecha_entrega.strftime('%Y-%m-%d %H:%M') }}</p>
+            <p><strong>Región:</strong> {{ aviso.comuna.region.nombre }}</p>
+            <p><strong>Comuna:</strong> {{ aviso.comuna.nombre }}</p>
+            <p><strong>Sector:</strong> {{ aviso.sector if aviso.sector else 'No especificado' }}</p>
+        </div>
+        <div>
+            <h4 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 0.5rem;">Información de contacto</h4>
+            <p><strong>Nombre:</strong> {{ aviso.nombre }}</p>
+            <p><strong>Email:</strong> {{ aviso.email }}</p>
+            <p><strong>Celular:</strong> {{ aviso.celular if aviso.celular else 'No especificado' }}</p>
+            {% if aviso.contactos %}
+            <p><strong>Contacto adicional:</strong></p>
+            <ul style="margin-left: 1.5rem;">
+                {% for contacto in aviso.contactos %}
+                <li>{{ contacto.nombre }}: {{ contacto.identificador }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
     </div>
     
-    <div class="form-section">
-        <h3>Información de contacto</h3>
-        <p><strong>Nombre:</strong> {{ aviso.nombre }}</p>
-        <p><strong>Email:</strong> <a href="mailto:{{ aviso.email }}">{{ aviso.email }}</a></p>
-        {% if aviso.celular %}
-        <p><strong>Celular:</strong> <a href="tel:{{ aviso.celular }}">{{ aviso.celular }}</a></p>
-        {% endif %}
-        {% if aviso.contactos %}
-        <p><strong>Contacto adicional:</strong></p>
-        <ul>
-            {% for contacto in aviso.contactos %}
-            <li>{{ contacto.nombre|capitalize }}: {{ contacto.identificador }}</li>
-            {% endfor %}
-        </ul>
-        {% endif %}
-    </div>
-    
-    <div class="form-section">
-        <h3>Información de la mascota</h3>
+    <div style="margin-bottom: 2rem;">
+        <h4 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 0.5rem;">Información de la mascota</h4>
         <p><strong>Tipo:</strong> {{ aviso.tipo|capitalize }}</p>
         <p><strong>Cantidad:</strong> {{ aviso.cantidad }}</p>
         <p><strong>Edad:</strong> {{ aviso.edad }} {{ 'años' if aviso.unidad_medida == 'a' else 'meses' }}</p>
         {% if aviso.descripcion %}
         <p><strong>Descripción:</strong></p>
-        <div class="alert">
-            {{ aviso.descripcion }}
-        </div>
+        <p style="background: #f8f9fa; padding: 1rem; border-radius: 4px; border-left: 4px solid #3498db;">{{ aviso.descripcion }}</p>
         {% endif %}
     </div>
 
     {% if aviso.fotos %}
-    <div class="form-section">
-        <h3>Fotografías</h3>
-        <div class="photo-container">
+    <div style="margin-bottom: 2rem;">
+        <h4 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 0.5rem;">Fotografías</h4>
+        <div class="photo-container" style="display: flex; flex-wrap: wrap; gap: 1rem; margin: 1rem 0;">
             {% for foto in aviso.fotos %}
             <div>
                 <img src="{{ url_for('static', filename='uploads/' + foto.nombre_archivo) }}" 
                      alt="Foto de {{ aviso.tipo }}"
                      class="photo-preview"
-                     onclick='enlargePhoto("{{ url_for("static", filename="uploads/" + foto.nombre_archivo) }}")'>
+                     style="width: 320px; height: 240px; object-fit: cover; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: transform 0.3s;"
+                     onmouseover="this.style.transform='scale(1.05)'"
+                     onmouseout="this.style.transform='scale(1)'"
+                     onclick="enlargePhoto('{{ url_for('static', filename='uploads/' + foto.nombre_archivo) }}')">
             </div>
             {% endfor %}
         </div>
     </div>
     {% endif %}
 
-    <div class="pagination">
+    <!-- Sección de Comentarios -->
+    <div style="margin-bottom: 2rem;">
+        <h4 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 0.5rem;">Comentarios</h4>
+        
+        <!-- Formulario para agregar comentario -->
+        <div class="form-section" style="margin-top: 1rem;">
+            <h5>Agregar un comentario</h5>
+            <form id="comentarioForm" onsubmit="return false;">
+                <div class="form-group">
+                    <label for="nombreComentario">Nombre *</label>
+                    <input type="text" id="nombreComentario" name="nombre" 
+                           minlength="3" maxlength="80" required
+                           placeholder="Mínimo 3, máximo 80 caracteres">
+                    <div class="error" id="nombreComentarioError"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="textoComentario">Comentario *</label>
+                    <textarea id="textoComentario" name="texto" 
+                              rows="4" cols="50" required
+                              placeholder="Mínimo 5 caracteres, máximo 300"></textarea>
+                    <div class="error" id="textoComentarioError"></div>
+                </div>
+                
+                <button type="button" onclick="agregarComentario()" class="btn">Agregar comentario</button>
+            </form>
+        </div>
+
+        <!-- Listado de comentarios -->
+        <div id="listaComentarios" style="margin-top: 2rem;">
+            <p style="text-align: center; color: #7f8c8d;">Cargando comentarios...</p>
+        </div>
+    </div>
+
+    <div style="margin-top: 2rem;">
         <a href="{{ url_for('listado_adopciones') }}" class="btn btn-secondary">Volver al listado</a>
         <a href="{{ url_for('index') }}" class="btn">Volver a portada</a>
     </div>
 </div>
 
 <!-- Modal de foto ampliada -->
-<div id="photoModal" class="modal">
-    <div class="modal-content">
-        <img id="enlargedPhoto" src="" alt="Foto ampliada" class="photo-full">
+<div id="photoModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 90%; width: auto;">
+        <img id="enlargedPhoto" src="" alt="Foto ampliada" 
+             style="max-width: 800px; max-height: 600px; width: 100%; height: auto; object-fit: contain; border-radius: 8px;">
         <br><br>
         <button onclick="closePhotoModal()" class="btn">Cerrar</button>
     </div>
@@ -79,6 +114,135 @@
 
 {% block scripts %}
 <script>
+    const avisoId = {{ aviso.id }};
+
+    // Cargar comentarios al cargar la página
+    document.addEventListener('DOMContentLoaded', function() {
+        cargarComentarios();
+    });
+
+    // Función para cargar comentarios
+    function cargarComentarios() {
+        fetch(`/api/comentarios/${avisoId}`)
+            .then(response => response.json())
+            .then(comentarios => {
+                const listaComentarios = document.getElementById('listaComentarios');
+                
+                if (comentarios.length === 0) {
+                    listaComentarios.innerHTML = '<p style="text-align: center; color: #7f8c8d;">No hay comentarios aún. ¡Sé el primero en comentar!</p>';
+                    return;
+                }
+
+                let html = '';
+                comentarios.forEach(comentario => {
+                    html += `
+                        <div class="comentario-item" style="background: #f8f9fa; padding: 1rem; margin-bottom: 1rem; border-radius: 8px; border-left: 4px solid #3498db;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                <strong style="color: #2c3e50;">${escapeHtml(comentario.nombre)}</strong>
+                                <span style="color: #7f8c8d; font-size: 0.9rem;">${comentario.fecha}</span>
+                            </div>
+                            <p style="margin: 0; color: #555;">${escapeHtml(comentario.texto)}</p>
+                        </div>
+                    `;
+                });
+
+                listaComentarios.innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('listaComentarios').innerHTML = 
+                    '<p style="text-align: center; color: #e74c3c;">Error al cargar comentarios</p>';
+            });
+    }
+
+    // Función para agregar comentario
+    function agregarComentario() {
+        // Limpiar errores previos
+        document.getElementById('nombreComentarioError').textContent = '';
+        document.getElementById('textoComentarioError').textContent = '';
+
+        // Obtener valores
+        const nombre = document.getElementById('nombreComentario').value.trim();
+        const texto = document.getElementById('textoComentario').value.trim();
+
+        // Validaciones cliente
+        let isValid = true;
+
+        if (!nombre || nombre.length < 3 || nombre.length > 80) {
+            document.getElementById('nombreComentarioError').textContent = 
+                'El nombre debe tener entre 3 y 80 caracteres';
+            isValid = false;
+        }
+
+        if (!texto || texto.length < 5) {
+            document.getElementById('textoComentarioError').textContent = 
+                'El comentario debe tener al menos 5 caracteres';
+            isValid = false;
+        } else if (texto.length > 300) {
+            document.getElementById('textoComentarioError').textContent = 
+                'El comentario no puede superar los 300 caracteres';
+            isValid = false;
+        }
+
+        if (!isValid) {
+            return;
+        }
+
+        // Enviar comentario
+        fetch('/api/comentarios/agregar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                nombre: nombre,
+                texto: texto,
+                aviso_id: avisoId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Limpiar formulario
+                document.getElementById('nombreComentario').value = '';
+                document.getElementById('textoComentario').value = '';
+                
+                // Recargar comentarios
+                cargarComentarios();
+                
+                // Mostrar mensaje de éxito
+                alert('¡Comentario agregado exitosamente!');
+            } else {
+                // Mostrar errores del servidor
+                if (data.errores) {
+                    if (data.errores.nombre) {
+                        document.getElementById('nombreComentarioError').textContent = data.errores.nombre;
+                    }
+                    if (data.errores.texto) {
+                        document.getElementById('textoComentarioError').textContent = data.errores.texto;
+                    }
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al agregar comentario. Por favor, intenta nuevamente.');
+        });
+    }
+
+    // Función para escapar HTML (prevenir XSS)
+    function escapeHtml(text) {
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return text.replace(/[&<>"']/g, m => map[m]);
+    }
+
+    // Funciones para modal de fotos
     function enlargePhoto(photoUrl) {
         document.getElementById('enlargedPhoto').src = photoUrl;
         document.getElementById('photoModal').style.display = 'block';
@@ -88,7 +252,6 @@
         document.getElementById('photoModal').style.display = 'none';
     }
 
-    // Cerrar modal al hacer clic fuera de la imagen
     window.onclick = function(event) {
         const modal = document.getElementById('photoModal');
         if (event.target === modal) {
@@ -96,7 +259,6 @@
         }
     }
 
-    // Cerrar modal con tecla Escape
     document.addEventListener('keydown', function(event) {
         if (event.key === 'Escape') {
             closePhotoModal();

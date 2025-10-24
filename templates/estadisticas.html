@@ -3,40 +3,180 @@
 {% block title %}Estadísticas - Sistema de Adopción{% endblock %}
 
 {% block content %}
-<div class="section">
-    <h2>Estadísticas del Sistema</h2>
-    
-    <div class="alert alert-success">
-        <p><strong>📊 Nota:</strong> Las estadísticas completas estarán disponibles en la Tarea 3.</p>
-    </div>
+<div class="section active">
+    <h2>Estadísticas de Adopción</h2>
     
     <div class="chart-container">
         <h3>Avisos de adopción por día</h3>
-        <div class="chart-placeholder">
-            📈 Gráfico de líneas - Avisos por día
-        </div>
-        <p>Visualización de la cantidad de avisos publicados día a día</p>
+        <div id="grafico-avisos-dia" style="width: 100%; height: 400px;"></div>
     </div>
     
     <div class="chart-container">
         <h3>Total de avisos por tipo de mascota</h3>
-        <div class="chart-placeholder">
-            🥧 Gráfico de torta - Gatos vs Perros
-        </div>
-        <p>Distribución porcentual entre avisos de gatos y perros</p>
+        <div id="grafico-avisos-tipo" style="width: 100%; height: 400px;"></div>
     </div>
     
     <div class="chart-container">
         <h3>Avisos por mes y tipo</h3>
-        <div class="chart-placeholder">
-            📊 Gráfico de barras - Gatos y Perros por mes
-        </div>
-        <p>Comparación mensual de avisos de gatos y perros</p>
+        <div id="grafico-avisos-mes" style="width: 100%; height: 400px;"></div>
     </div>
     
-    <div class="pagination">
+    <div style="margin-top: 2rem;">
         <a href="{{ url_for('index') }}" class="btn">Volver a portada</a>
-        <a href="{{ url_for('listado_adopciones') }}" class="btn btn-secondary">Ver listado</a>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://code.highcharts.com/highcharts.js"></script>
+<script>
+    // Cargar gráfico de avisos por día
+    fetch('/api/estadisticas/avisos-por-dia')
+        .then(response => response.json())
+        .then(data => {
+            if (data.length === 0) {
+                document.getElementById('grafico-avisos-dia').innerHTML = 
+                    '<p style="text-align: center; color: #7f8c8d; padding: 2rem;">No hay datos disponibles</p>';
+                return;
+            }
+
+            const fechas = data.map(item => item.fecha);
+            const cantidades = data.map(item => item.cantidad);
+
+            Highcharts.chart('grafico-avisos-dia', {
+                chart: {
+                    type: 'line'
+                },
+                title: {
+                    text: null
+                },
+                xAxis: {
+                    categories: fechas,
+                    title: {
+                        text: 'Fecha'
+                    }
+                },
+                yAxis: {
+                    title: {
+                        text: 'Cantidad de Avisos'
+                    },
+                    allowDecimals: false
+                },
+                series: [{
+                    name: 'Avisos',
+                    data: cantidades,
+                    color: '#3498db'
+                }],
+                credits: {
+                    enabled: false
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('grafico-avisos-dia').innerHTML = 
+                '<p style="text-align: center; color: #e74c3c; padding: 2rem;">Error al cargar datos</p>';
+        });
+
+    // Cargar gráfico de avisos por tipo
+    fetch('/api/estadisticas/avisos-por-tipo')
+        .then(response => response.json())
+        .then(data => {
+            if (data.length === 0) {
+                document.getElementById('grafico-avisos-tipo').innerHTML = 
+                    '<p style="text-align: center; color: #7f8c8d; padding: 2rem;">No hay datos disponibles</p>';
+                return;
+            }
+
+            const datosGrafico = data.map(item => ({
+                name: item.tipo === 'gato' ? 'Gatos' : 'Perros',
+                y: item.cantidad,
+                color: item.tipo === 'gato' ? '#e67e22' : '#9b59b6'
+            }));
+
+            Highcharts.chart('grafico-avisos-tipo', {
+                chart: {
+                    type: 'pie'
+                },
+                title: {
+                    text: null
+                },
+                plotOptions: {
+                    pie: {
+                        allowPointSelect: true,
+                        cursor: 'pointer',
+                        dataLabels: {
+                            enabled: true,
+                            format: '<b>{point.name}</b>: {point.percentage:.1f}% ({point.y})'
+                        }
+                    }
+                },
+                series: [{
+                    name: 'Avisos',
+                    data: datosGrafico
+                }],
+                credits: {
+                    enabled: false
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('grafico-avisos-tipo').innerHTML = 
+                '<p style="text-align: center; color: #e74c3c; padding: 2rem;">Error al cargar datos</p>';
+        });
+
+    // Cargar gráfico de avisos por mes
+    fetch('/api/estadisticas/avisos-por-mes')
+        .then(response => response.json())
+        .then(data => {
+            if (data.length === 0) {
+                document.getElementById('grafico-avisos-mes').innerHTML = 
+                    '<p style="text-align: center; color: #7f8c8d; padding: 2rem;">No hay datos disponibles</p>';
+                return;
+            }
+
+            const meses = data.map(item => item.mes);
+            const gatos = data.map(item => item.gatos);
+            const perros = data.map(item => item.perros);
+
+            Highcharts.chart('grafico-avisos-mes', {
+                chart: {
+                    type: 'column'
+                },
+                title: {
+                    text: null
+                },
+                xAxis: {
+                    categories: meses,
+                    title: {
+                        text: 'Mes'
+                    }
+                },
+                yAxis: {
+                    title: {
+                        text: 'Cantidad de Avisos'
+                    },
+                    allowDecimals: false
+                },
+                series: [{
+                    name: 'Gatos',
+                    data: gatos,
+                    color: '#e67e22'
+                }, {
+                    name: 'Perros',
+                    data: perros,
+                    color: '#9b59b6'
+                }],
+                credits: {
+                    enabled: false
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('grafico-avisos-mes').innerHTML = 
+                '<p style="text-align: center; color: #e74c3c; padding: 2rem;">Error al cargar datos</p>';
+        });
+</script>
 {% endblock %}

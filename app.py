@@ -63,6 +63,15 @@ class ContactarPor(db.Model):
     identificador = db.Column(db.String(150), nullable=False)
     aviso_id = db.Column(db.Integer, db.ForeignKey('aviso_adopcion.id'), nullable=False)
 
+class Comentario(db.Model):
+    __tablename__ = 'comentario'
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(80), nullable=False)
+    texto = db.Column(db.String(300), nullable=False)
+    fecha = db.Column(db.DateTime, nullable=False, default=datetime.now)
+    aviso_id = db.Column(db.Integer, db.ForeignKey('aviso_adopcion.id'), nullable=False)
+    
+
 # Funciones de validación
 def validar_email(email):
     patron = r'^[^\s@]+@[^\s@]+\.[^\s@]+$'
@@ -280,6 +289,121 @@ def detalle_aviso(aviso_id):
 @app.route('/estadisticas')
 def estadisticas():
     return render_template('estadisticas.html')
+
+@app.route('/api/estadisticas/avisos-por-dia')
+def avisos_por_dia():
+    # Obtener avisos agrupados por día
+    avisos = db.session.query(
+        db.func.date(AvisoAdopcion.fecha_ingreso).label('fecha'),
+        db.func.count(AvisoAdopcion.id).label('cantidad')
+    ).group_by(db.func.date(AvisoAdopcion.fecha_ingreso)).order_by('fecha').all()
+    
+    datos = [{'fecha': aviso.fecha.strftime('%Y-%m-%d'), 'cantidad': aviso.cantidad} for aviso in avisos]
+    return jsonify(datos)
+
+@app.route('/api/estadisticas/avisos-por-tipo')
+def avisos_por_tipo():
+    # Obtener avisos agrupados por tipo
+    avisos = db.session.query(
+        AvisoAdopcion.tipo,
+        db.func.count(AvisoAdopcion.id).label('cantidad')
+    ).group_by(AvisoAdopcion.tipo).all()
+    
+    datos = [{'tipo': aviso.tipo, 'cantidad': aviso.cantidad} for aviso in avisos]
+    return jsonify(datos)
+
+@app.route('/api/estadisticas/avisos-por-mes')
+def avisos_por_mes():
+    # Obtener avisos agrupados por mes y tipo
+    avisos = db.session.query(
+        db.func.date_format(AvisoAdopcion.fecha_ingreso, '%Y-%m').label('mes'),
+        AvisoAdopcion.tipo,
+        db.func.count(AvisoAdopcion.id).label('cantidad')
+    ).group_by('mes', AvisoAdopcion.tipo).order_by('mes').all()
+    
+    # Organizar datos por mes
+    datos_por_mes = {}
+    for aviso in avisos:
+        mes = aviso.mes
+        if mes not in datos_por_mes:
+            datos_por_mes[mes] = {'mes': mes, 'gatos': 0, 'perros': 0}
+        
+        if aviso.tipo == 'gato':
+            datos_por_mes[mes]['gatos'] = aviso.cantidad
+        else:
+            datos_por_mes[mes]['perros'] = aviso.cantidad
+    
+    datos = list(datos_por_mes.values())
+    return jsonify(datos)
+
+@app.route('/api/comentarios/<int:aviso_id>')
+def obtener_comentarios(aviso_id):
+    comentarios = Comentario.query.filter_by(aviso_id=aviso_id).order_by(Comentario.fecha.desc()).all()
+    datos = [{
+        'id': c.id,
+        'nombre': c.nombre,
+        'texto': c.texto,
+        'fecha': c.fecha.strftime('%Y-%m-%d %H:%M:%S')
+    } for c in comentarios]
+    return jsonify(datos)
+
+@app.route('/api/comentarios/agregar', methods=['POST'])
+def agregar_comentario():
+    try:
+        data = request.get_json()
+        
+        # Validaciones
+        errores = {}
+        
+        nombre = data.get('nombre', '').strip()
+        if not nombre:
+            errores['nombre'] = 'El nombre es obligatorio'
+        elif len(nombre) < 3 or len(nombre) > 80:
+            errores['nombre'] = 'El nombre debe tener entre 3 y 80 caracteres'
+        
+        texto = data.get('texto', '').strip()
+        if not texto:
+            errores['texto'] = 'El texto del comentario es obligatorio'
+        elif len(texto) < 5:
+            errores['texto'] = 'El comentario debe tener al menos 5 caracteres'
+        elif len(texto) > 300:
+            errores['texto'] = 'El comentario no puede superar los 300 caracteres'
+        
+        aviso_id = data.get('aviso_id')
+        if not aviso_id:
+            errores['aviso_id'] = 'ID de aviso requerido'
+        else:
+            aviso = AvisoAdopcion.query.get(aviso_id)
+            if not aviso:
+                errores['aviso_id'] = 'El aviso no existe'
+        
+        if errores:
+            return jsonify({'success': False, 'errores': errores}), 400
+        
+        # Crear comentario
+        comentario = Comentario(
+            nombre=nombre,
+            texto=texto,
+            aviso_id=aviso_id
+        )
+        
+        db.session.add(comentario)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'mensaje': 'Comentario agregado exitosamente',
+            'comentario': {
+                'id': comentario.id,
+                'nombre': comentario.nombre,
+                'texto': comentario.texto,
+                'fecha': comentario.fecha.strftime('%Y-%m-%d %H:%M:%S')
+            }
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/comunas/<int:region_id>')
 def get_comunas(region_id):
