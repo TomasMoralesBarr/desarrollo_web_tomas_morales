@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evaluación de Avisos - Sistema de Adopción</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            background-color: #f4f4f4;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 0.5rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        table th,
+        table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        table th {
+            background-color: #3498db;
+            color: white;
+            font-weight: bold;
+        }
+
+        table tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .btn-evaluar {
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .btn-evaluar:hover {
+            background-color: #229954;
+        }
+
+        .nota-promedio {
+            font-weight: bold;
+            color: #e67e22;
+            font-size: 1.1em;
+        }
+
+        .sin-nota {
+            color: #95a5a6;
+            font-style: italic;
+        }
+
+        .alert {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 4px;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .alert-error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 2rem;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .modal-content h3 {
+            margin-bottom: 1rem;
+            color: #2c3e50;
+        }
+
+        .nota-selector {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 1.5rem 0;
+            flex-wrap: wrap;
+        }
+
+        .nota-btn {
+            width: 50px;
+            height: 50px;
+            border: 2px solid #3498db;
+            background: white;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .nota-btn:hover {
+            background-color: #3498db;
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .nota-btn.selected {
+            background-color: #27ae60;
+            border-color: #27ae60;
+            color: white;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .btn-secondary {
+            background-color: #95a5a6;
+            color: white;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐾 Evaluación de Avisos de Adopción</h1>
+        
+        <div id="mensaje" style="display:none;"></div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Fecha Publicación</th>
+                    <th>Sector</th>
+                    <th>Cantidad</th>
+                    <th>Tipo</th>
+                    <th>Edad</th>
+                    <th>Comuna</th>
+                    <th>Nota</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="aviso : ${avisos}">
+                    <td th:text="${aviso.id}"></td>
+                    <td th:text="${#temporals.format(aviso.fechaIngreso, 'yyyy-MM-dd')}"></td>
+                    <td th:text="${aviso.sector != null ? aviso.sector : '-'}"></td>
+                    <td th:text="${aviso.cantidad}"></td>
+                    <td th:text="${aviso.tipo}"></td>
+                    <td>
+                        <span th:text="${aviso.edad}"></span>
+                        <span th:text="${aviso.unidadMedida == T(com.tarea4desarrollo.tarea4.models.AvisoAdopcion.UnidadMedida).a ? 'años' : 'meses'}"></span>
+                    </td>
+                    <td th:text="${aviso.comuna != null ? aviso.comuna.nombre : '-'}"></td>
+                    <td>
+                        <span th:id="'nota-' + ${aviso.id}" 
+                              th:class="${promedios.get(aviso.id) != null ? 'nota-promedio' : 'sin-nota'}"
+                              th:text="${promedios.get(aviso.id) != null ? promedios.get(aviso.id) : '-'}">
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn-evaluar" 
+                                th:attr="data-aviso-id=${aviso.id}"
+                                onclick="abrirModalEvaluacion(this.getAttribute('data-aviso-id'))">
+                            Evaluar
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Modal de Evaluación -->
+    <div id="modalEvaluacion" class="modal">
+        <div class="modal-content">
+            <h3>Evaluar Aviso #<span id="avisoIdModal"></span></h3>
+            <p>Seleccione una nota del 1 al 7:</p>
+            
+            <div class="nota-selector">
+                <button class="nota-btn" data-nota="1" onclick="seleccionarNota(1)">1</button>
+                <button class="nota-btn" data-nota="2" onclick="seleccionarNota(2)">2</button>
+                <button class="nota-btn" data-nota="3" onclick="seleccionarNota(3)">3</button>
+                <button class="nota-btn" data-nota="4" onclick="seleccionarNota(4)">4</button>
+                <button class="nota-btn" data-nota="5" onclick="seleccionarNota(5)">5</button>
+                <button class="nota-btn" data-nota="6" onclick="seleccionarNota(6)">6</button>
+                <button class="nota-btn" data-nota="7" onclick="seleccionarNota(7)">7</button>
+            </div>
+
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="guardarNota()">Guardar</button>
+                <button class="btn btn-secondary" onclick="cerrarModal()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let avisoIdActual = null;
+        let notaSeleccionada = null;
+
+        function abrirModalEvaluacion(avisoId) {
+            avisoIdActual = avisoId;
+            notaSeleccionada = null;
+            document.getElementById('avisoIdModal').textContent = avisoId;
+            document.getElementById('modalEvaluacion').style.display = 'block';
+            
+            // Limpiar selección previa
+            document.querySelectorAll('.nota-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+        }
+
+        function cerrarModal() {
+            document.getElementById('modalEvaluacion').style.display = 'none';
+            avisoIdActual = null;
+            notaSeleccionada = null;
+        }
+
+        function seleccionarNota(nota) {
+            notaSeleccionada = nota;
+            
+            // Actualizar UI
+            document.querySelectorAll('.nota-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            document.querySelector(`[data-nota="${nota}"]`).classList.add('selected');
+        }
+
+        function guardarNota() {
+            if (!notaSeleccionada) {
+                mostrarMensaje('Por favor seleccione una nota', 'error');
+                return;
+            }
+
+            // Enviar petición AJAX
+            const formData = new FormData();
+            formData.append('avisoId', avisoIdActual);
+            formData.append('nota', notaSeleccionada);
+
+            fetch('/api/notas/agregar', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Actualizar promedio en la tabla
+                    const notaElement = document.getElementById(`nota-${avisoIdActual}`);
+                    if (data.promedio) {
+                        notaElement.textContent = data.promedio;
+                        notaElement.className = 'nota-promedio';
+                    }
+                    
+                    mostrarMensaje('¡Nota agregada exitosamente!', 'success');
+                    cerrarModal();
+                } else {
+                    mostrarMensaje(data.mensaje || 'Error al agregar nota', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                mostrarMensaje('Error al procesar la solicitud', 'error');
+            });
+        }
+
+        function mostrarMensaje(texto, tipo) {
+            const mensajeDiv = document.getElementById('mensaje');
+            mensajeDiv.className = tipo === 'success' ? 'alert alert-success' : 'alert alert-error';
+            mensajeDiv.textContent = texto;
+            mensajeDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                mensajeDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        // Cerrar modal al hacer clic fuera
+        window.onclick = function(event) {
+            const modal = document.getElementById('modalEvaluacion');
+            if (event.target === modal) {
+                cerrarModal();
+            }
+        }
+    </script>
+</body>
+</html>
