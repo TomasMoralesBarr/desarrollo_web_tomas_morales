@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+
+{% block title %}Agregar Aviso - Sistema de Adopción{% endblock %}
+
+{% block content %}
+<div class="section">
+    <h2>Agregar Aviso de Adopción</h2>
+    <form id="adoptionForm" method="POST" enctype="multipart/form-data" action="{{ url_for('agregar_aviso') }}">
+        
+        <!-- Sección: ¿Dónde? -->
+        <div class="form-section">
+            <h3>¿Dónde?</h3>
+            
+            <div class="form-group">
+                <label for="region">Región *</label>
+                <select id="region" name="region" required>
+                    <option value="">Seleccione una región</option>
+                    {% for region in regiones %}
+                    <option value="{{ region.id }}" {% if form_data and form_data.get('region')|string == region.id|string %}selected{% endif %}>
+                        {{ region.nombre }}
+                    </option>
+                    {% endfor %}
+                </select>
+                {% if errores and errores.region %}
+                <div class="error">{{ errores.region }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="comuna">Comuna *</label>
+                <select id="comuna" name="comuna" required>
+                    <option value="">Seleccione una comuna</option>
+                </select>
+                {% if errores and errores.comuna %}
+                <div class="error">{{ errores.comuna }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="sector">Sector</label>
+                <input type="text" id="sector" name="sector" maxlength="100" 
+                       value="{{ form_data.get('sector', '') if form_data else '' }}"
+                       placeholder="Opcional, máximo 100 caracteres">
+                {% if errores and errores.sector %}
+                <div class="error">{{ errores.sector }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Sección: Contacto -->
+        <div class="form-section">
+            <h3>¿Contacto de esta publicación?</h3>
+            
+            <div class="form-group">
+                <label for="nombre">Nombre *</label>
+                <input type="text" id="nombre" name="nombre" required minlength="3" maxlength="200" 
+                       value="{{ form_data.get('nombre', '') if form_data else '' }}"
+                       placeholder="Mínimo 3, máximo 200 caracteres">
+                {% if errores and errores.nombre %}
+                <div class="error">{{ errores.nombre }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="email">Email *</label>
+                <input type="email" id="email" name="email" required maxlength="100"
+                       value="{{ form_data.get('email', '') if form_data else '' }}">
+                {% if errores and errores.email %}
+                <div class="error">{{ errores.email }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="celular">Número de celular</label>
+                <input type="tel" id="celular" name="celular" 
+                       value="{{ form_data.get('celular', '') if form_data else '' }}"
+                       placeholder="+569.12345678">
+                {% if errores and errores.celular %}
+                <div class="error">{{ errores.celular }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="contacto">Contactar por</label>
+                <select id="contacto" name="contacto">
+                    <option value="">Seleccione una opción</option>
+                    <option value="whatsapp" {% if form_data and form_data.get('contacto') == 'whatsapp' %}selected{% endif %}>WhatsApp</option>
+                    <option value="telegram" {% if form_data and form_data.get('contacto') == 'telegram' %}selected{% endif %}>Telegram</option>
+                    <option value="X" {% if form_data and form_data.get('contacto') == 'X' %}selected{% endif %}>X</option>
+                    <option value="instagram" {% if form_data and form_data.get('contacto') == 'instagram' %}selected{% endif %}>Instagram</option>
+                    <option value="tiktok" {% if form_data and form_data.get('contacto') == 'tiktok' %}selected{% endif %}>TikTok</option>
+                    <option value="otra" {% if form_data and form_data.get('contacto') == 'otra' %}selected{% endif %}>Otra</option>
+                </select>
+                <div id="socialInputs"></div>
+                {% if errores and errores.contacto %}
+                <div class="error">{{ errores.contacto }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Sección: Mascota -->
+        <div class="form-section">
+            <h3>¿Qué mascota ofrece en adopción?</h3>
+            
+            <div class="form-group">
+                <label for="tipo">Tipo *</label>
+                <select id="tipo" name="tipo" required>
+                    <option value="">Seleccione el tipo</option>
+                    <option value="gato" {% if form_data and form_data.get('tipo') == 'gato' %}selected{% endif %}>Gato</option>
+                    <option value="perro" {% if form_data and form_data.get('tipo') == 'perro' %}selected{% endif %}>Perro</option>
+                </select>
+                {% if errores and errores.tipo %}
+                <div class="error">{{ errores.tipo }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="cantidad">Cantidad *</label>
+                <input type="number" id="cantidad" name="cantidad" required min="1"
+                       value="{{ form_data.get('cantidad', '') if form_data else '' }}">
+                {% if errores and errores.cantidad %}
+                <div class="error">{{ errores.cantidad }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="edad">Edad *</label>
+                <input type="number" id="edad" name="edad" required min="1"
+                       value="{{ form_data.get('edad', '') if form_data else '' }}">
+                {% if errores and errores.edad %}
+                <div class="error">{{ errores.edad }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="unidadEdad">Unidad medida edad *</label>
+                <select id="unidadEdad" name="unidadEdad" required>
+                    <option value="">Seleccione unidad</option>
+                    <option value="meses" {% if form_data and form_data.get('unidadEdad') == 'meses' %}selected{% endif %}>Meses</option>
+                    <option value="años" {% if form_data and form_data.get('unidadEdad') == 'años' %}selected{% endif %}>Años</option>
+                </select>
+                {% if errores and errores.unidadEdad %}
+                <div class="error">{{ errores.unidadEdad }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="fechaEntrega">Fecha disponible para entrega *</label>
+                <input type="datetime-local" id="fechaEntrega" name="fechaEntrega" required
+                       value="{{ form_data.get('fechaEntrega', '') if form_data else '' }}">
+                {% if errores and errores.fechaEntrega %}
+                <div class="error">{{ errores.fechaEntrega }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="descripcion">Descripción</label>
+                <textarea id="descripcion" name="descripcion" rows="4" cols="50" maxlength="500"
+                          placeholder="Descripción opcional de la mascota (máximo 500 caracteres)...">{{ form_data.get('descripcion', '') if form_data else '' }}</textarea>
+            </div>
+            
+            <div class="form-group">
+                <label>Foto *</label>
+                <div id="photoInputs">
+                    <div class="photo-input-group">
+                        <input type="file" name="foto" accept="image/*" required>
+                    </div>
+                </div>
+                <button type="button" onclick="addPhotoInput()" class="btn btn-secondary">Agregar otra foto</button>
+                <p style="font-size: 0.9rem; color: #666; margin-top: 0.5rem;">Mínimo 1 foto, máximo 5. Formatos: PNG, JPG, JPEG, GIF, WEBP</p>
+                {% if errores and errores.foto %}
+                <div class="error">{{ errores.foto }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <button type="submit" class="btn">Agregar este aviso de adopción</button>
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let photoCount = 1;
+    let socialInputCount = 0;
+
+    // Inicialización
+    document.addEventListener('DOMContentLoaded', function() {
+        // Prellenar fecha de entrega (fecha actual + 3 horas)
+        {% if not form_data or not (form_data.get('fechaEntrega')) %}
+        const now = new Date();
+        now.setHours(now.getHours() + 3);
+        const fechaEntrega = now.toISOString().slice(0, 16);
+        document.getElementById('fechaEntrega').value = fechaEntrega;
+        {% endif %}
+
+        // Configurar eventos
+        document.getElementById('region').addEventListener('change', updateComunas);
+        document.getElementById('contacto').addEventListener('change', handleContactoChange);
+        
+        // Cargar comunas si hay región preseleccionada
+        {% if form_data and form_data.get('region') %}
+        updateComunas();
+        {% endif %}
+    });
+
+    // Actualizar comunas según región seleccionada
+    function updateComunas() {
+        const regionId = document.getElementById('region').value;
+        const comunaSelect = document.getElementById('comuna');
+        const comunaSeleccionada = {{ form_data.get('comuna', 'null') if form_data else 'null' }};
+        
+        comunaSelect.innerHTML = '<option value="">Seleccione una comuna</option>';
+        
+        if (regionId) {
+            fetch('/api/comunas/' + regionId)
+                .then(response => response.json())
+                .then(comunas => {
+                    comunas.forEach(comuna => {
+                        const option = document.createElement('option');
+                        option.value = comuna.id;
+                        option.textContent = comuna.nombre;
+                        if (comunaSeleccionada && comuna.id == comunaSeleccionada) {
+                            option.selected = true;
+                        }
+                        comunaSelect.appendChild(option);
+                    });
+                })
+                .catch(error => console.error('Error:', error));
+        }
+    }
+
+    // Manejar cambio en método de contacto
+    function handleContactoChange() {
+        const contacto = document.getElementById('contacto');
+        const socialInputs = document.getElementById('socialInputs');
+        
+        // Limpiar inputs anteriores
+        socialInputs.innerHTML = '';
+        socialInputCount = 0;
+        
+        if (contacto.value && socialInputCount < 5) {
+            socialInputCount++;
+            const div = document.createElement('div');
+            div.className = 'social-input';
+            div.innerHTML = '<label for="socialId' + socialInputCount + '">ID o URL para ' + contacto.options[contacto.selectedIndex].text + '</label>' +
+                '<input type="text" id="socialId' + socialInputCount + '" name="socialId' + socialInputCount + '" minlength="4" maxlength="150" placeholder="Mínimo 4, máximo 150 caracteres">';
+            socialInputs.appendChild(div);
+        }
+    }
+
+    // Agregar input de foto adicional
+    function addPhotoInput() {
+        if (photoCount < 5) {
+            photoCount++;
+            const photoInputs = document.getElementById('photoInputs');
+            const div = document.createElement('div');
+            div.className = 'photo-input-group';
+            div.innerHTML = '<input type="file" name="foto" accept="image/*">';
+            photoInputs.appendChild(div);
+        } else {
+            alert('Máximo 5 fotos permitidas');
+        }
+    }
+</script>
+{% endblock %}
